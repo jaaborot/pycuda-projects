@@ -53,32 +53,7 @@ def qRAM_pattern(symbol_index):
 
 # This method returns this decimal number's binary number format.
 def convert_decimal_to_binary(decimal_number, register_size):
-    # bit_list = []
-    # if decimal_number < 0:
-    #     # get absolute value of decimal number
-    #     decimal_number = abs(decimal_number)
-    #     # get binary representation of decimal number
-    #     for x in xrange(0, register_size):
-    #         i = register_size - x - 1
-    #         if decimal_number >= pow(2, i):
-    #             bit_list.append(1)
-    #             decimal_number = decimal_number - pow(2, i)
-    #         else:
-    #             bit_list.append(0)
-    #     bit_list.reverse()
-    #     # invert binary number
-    #     bit_list
-    #     # add 1 to binary number
-    #     # return resulting binary number
-    # else:
-    #     # get binary representation of decimal number
-    #     # return resulting binary number
-    return np.binary_repr(decimal_number, width=8)
-
-# get the index of a symbol in alphabet in binary format
-def convert_symbol_to_binary(symbol, register_size):
-    alphabet_index = alphabet.index(symbol)
-    return convert_decimal_to_binary(alphabet_index, register_size)
+    return np.binary_repr(decimal_number, width=register_size)
 
 
 # Express the register state in binary format
@@ -95,12 +70,62 @@ def binarize(register):
         binary_register_state[index][2] = convert_decimal_to_binary(register[index][2], int(ceil(log(M)) + 1))
     return binary_register_state
 
+# This method returns the vector representation of a binary number. The size of the
+# vector is the 2^register_size.
+def convert_decimal_to_vector(decimal_number, register_code, register_size):
+    vector = [0 for x in range(pow(2,register_size))]
 
+    # index register [unsigned integer, 0 to N-1, N vectors]
+    # symbol register [unsigned integer, 0 to alphabet_size - 1, alphabet_size number of vectors]
+    if register_code == _index_register or register_code == _symbol_register:
+        vector[decimal_number] = 1
 
+    # location register [unsigned integer, -(M-1) to 0 to +(N-1), N + M - 1 number of vectors]
+    elif register_code == _location_register:
+        vector[decimal_number + N] = 1
+
+    return vector
+
+# This method expresses the state of the registers as individual vectors per register
+def vectorize(register):
+    vector_register_state = [[np.empty([1,1]) for x in range(3)] for y in range(N)]
+    for index in range(N):
+        # index register
+        vector_register_state[index][0] = convert_decimal_to_vector(register[index][0], _index_register, int(ceil(log(N))))
+
+        # symbol register
+        vector_register_state[index][1] = convert_decimal_to_vector(register[index][1], _symbol_register, int(ceil(log(alphabet_size))))
+
+        # location register
+        vector_register_state[index][2] = convert_decimal_to_vector(register[index][2], _location_register, int(ceil(log(N)) + 1))
+
+    return vector_register_state
+
+# This method expresses the state of the registers as a single vector only
+def vectorize_compact(register):
+    vector_register_state = [0 for x in range(N)]
+    for index in range(N):
+        # index register
+        index_vector = convert_decimal_to_vector(register[index][0], _index_register, int(ceil(log(N))))
+
+        # symbol register
+        symbol_vector = convert_decimal_to_vector(register[index][1], _symbol_register, int(ceil(log(alphabet_size))))
+
+        # location register
+        location_vector = convert_decimal_to_vector(register[index][2], _location_register, int(ceil(log(N)) + 1))
+
+        vector_register_state[index] = np.kron(index_vector, np.kron(symbol_vector, location_vector))
+
+    return vector_register_state
 
 print 'Booyah!'
 
 # =================== User input ===================
+# constant variables
+_index_register = 0
+_symbol_register = 1
+_location_register = 2
+
 # alphabet
 alphabet = raw_input('Specify alphabet symbols in comma-separated format: ').split(',')
 alphabet_size = len(alphabet)
@@ -139,6 +164,8 @@ print '\n'
 print 'Step 1 register state ============================'
 print 'decimal:', register
 print 'binary:', binarize(register)
+print 'vector:', vectorize(register)
+print 'vector_compact:', vectorize_compact(register)
 
 # 2. Put into a superposition the index register.
 for i in range(N):
@@ -147,6 +174,8 @@ print '\n'
 print 'Step 2 register state ============================'
 print 'decimal:', register
 print 'binary:', binarize(register)
+print 'vector:', vectorize(register)
+print 'vector_compact:', vectorize_compact(register)
 
 # 3. Put the symbol register into the state |Beta(T[i])> where Beta(.) is
 #   	a function which maps a symbol in Sigma to an log Sigma-bit
@@ -157,6 +186,8 @@ print '\n'
 print 'Step 3 register state ============================'
 print 'decimal:', register
 print 'binary:', binarize(register)
+print 'vector:', vectorize(register)
+print 'vector_compact:', vectorize_compact(register)
 
 # 4. Put the location register into the state |Psi(T[i])> where Psi(.) is
 #       a function which maps a symbol in Sigma to its location of
@@ -167,6 +198,8 @@ print '\n'
 print 'Step 4 register state ============================'
 print 'decimal:', register
 print 'binary:', binarize(register)
+print 'vector:', vectorize(register)
+print 'vector_compact:', vectorize_compact(register)
 
 # 5. Put the location register into the state |i-Psi(T[i])>.
 for i in range(N):
@@ -175,6 +208,8 @@ print '\n'
 print 'Step 5 register state ============================'
 print 'decimal:', register
 print 'binary:', binarize(register)
+print 'vector:', vectorize(register)
+print 'vector_compact:', vectorize_compact(register)
 
 # 6. Measure the state of the location register and output the classical
 #       value. (pseudo-randomly select among the indices of T)
