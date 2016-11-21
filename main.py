@@ -49,6 +49,20 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+# Kernels
+def superpositioning_kernel():
+    pass
+
+def symbol_fetching_kernel():
+    pass
+
+def location_fectching_kernel():
+    pass
+
+def index_fetching_kernel():
+    pass
+
+
 # Methods
 def superposition_matrix_operator():
     H = 1 / sqrt(2) * np.array([[1,1],[1,-1]])
